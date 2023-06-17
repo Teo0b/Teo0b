@@ -1,15 +1,171 @@
 <!DOCTYPE html>
 <html>
-	<head>
-		<meta charset=UTF-8>
-		<title>Main</title>
-	</head>
-	<body>
-		<p>Hola :D</p>
-		<p>pruebaaaaaaaaa :D</p>
-		<img src="https://www.rd.com/wp-content/uploads/2021/01/GettyImages-1175550351.jpg" width="100">
-		<script>
-			alert("HOLA :D");
-		</script>
-	</body>
+  <head>
+    <style>
+      html, body {
+        margin: 0px;
+				padding: 0px;
+				width: 100%;
+				height: 100%;
+				background-color: white;
+      }
+			canvas {
+				width: 100%;
+				height: 100%;
+        image-rendering: pixelated;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="c"></canvas>
+    <script>
+      let c = document.getElementById("c");
+			let ctx = c.getContext("2d");
+
+			let sr = 200;
+
+			let size = 500;
+
+      let ips = new Array(size);
+      let ps = new Array(size);
+	  let ps_c = new Array(size);
+	  let ps_s = new Array(size);
+      let ops = new Array(size);
+
+			let freq = 30;
+			let ticks = 0;
+			let fL = 0;
+			let fR = 150;
+
+			function update() {
+				ticks++;
+				let applFreq = freq + (30 * Math.sin(ticks/20));
+        for (let i = 0; i < ps.length; i++) {
+				  ps[i] = 0;
+				  ips[i] = 0;
+				  ops[i] = 0;
+				  ips[i] = 0.3 * ((Math.random() * 2.0) - 1.0);
+				  //ips[i] +=  Math.sin(applFreq*(i/sr)) * 10;
+				  let v = Math.sin(applFreq*(i/sr));
+				  if (v < 0) { v = -1.0; } else { v = 1.0; }
+				  v *= 10;
+				  let varAm = (Math.cos(i/40) + 1.0) / 2.0;
+				  //varAm = Math.random();
+				  //ips[i] += ((Math.random() * 2.0) - 1.0) * 0.5;
+				  ips[i] += v + (i / ps.length);
+				  ips[i] += 0.5 * Math.sin((0.2*applFreq)*(i/sr)) * 10;
+				  //ips[i] += 0.9 * Math.sin((0.2*applFreq)*(i/sr)) * 10;
+				  //ips[i] += 0.4 * Math.sin((3.0*applFreq)*(i/sr)) * 10;
+				  //ips[i] += varAm * Math.sin((9.0*applFreq)*(i/sr)) * 10;
+        }
+				for (let i = 0; i < ps.length; i++) {
+				  let si = 0;
+				  let co = 0;
+				  for (let j = 0; j < ps.length; j++) {
+					let sample = ips[j];
+					//if (i > 300) { sample = 0; }
+					let c_si = (sample * Math.sin( (j)*(i/sr) ));
+					let c_co = (sample * Math.cos( (j)*(i/sr) ));
+				    si += c_si;
+				    co += c_co;
+				  }
+				  ps_c[i] = co / ps.length;
+				  ps_s[i] = si / ps.length;
+				  let ti = Math.floor(i);
+				  ps[ti] += Math.sqrt( (2*si)**2 + (2*co)**2 );
+				  ps[ti] /= ps.length;
+        }
+				if (fL > fR) {
+					temp = fR;
+					fR = fL;
+					fL = temp;
+				}
+				fL = Math.min(Math.max(0, fL), ps.length);
+				fR = Math.min(Math.max(0, fR), ps.length);
+				for (let i = fL; i < fR; i++) {
+				  for (let j = 0; j < ps.length; j++) {
+					let out = ps_c[i]*Math.cos(j/sr*i) + ps_s[i]*Math.sin(j/sr*i);
+					ops[j] += out;
+				  }
+				}
+
+      }
+
+		function draw() {
+			ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height)
+			let gap = c.width / ps.length;
+				let xi = 0;
+				let my = 150;
+				let scale = 3;
+				ctx.strokeStyle = "#000000ff";
+				ctx.beginPath();
+				ctx.moveTo(xi, my+ps[0]);
+				for (let i = 0; i < ps.length; i++) {
+				  xi += gap;
+				  ctx.lineTo(xi, my + (scale*ps[i]));
+				}
+				ctx.stroke();
+				ctx.strokeRect(gap*fL, my-(10*scale), (gap*fR)-(gap*fL), scale*20)
+
+        xi = 0;
+        my = 60;
+				ctx.strokeStyle = "#000000ff";
+				ctx.beginPath();
+				ctx.moveTo(xi, my+ps[0]);
+				for (let i = 0; i < ps.length; i++) {
+				  xi += gap;
+				  ctx.lineTo(xi, my + (scale*ips[i]));
+				}
+				ctx.stroke();
+
+				xi = 0;
+        my = 250;
+				ctx.strokeStyle = "#000000ff";
+				ctx.beginPath();
+				ctx.moveTo(xi, my+ps[0]);
+				for (let i = 0; i < ps.length; i++) {
+				  xi += gap;
+				  ctx.lineTo(xi, my + (scale*ops[i]));
+				}
+				ctx.stroke();
+				
+
+
+      }
+
+	function resize() {
+		let cs = getComputedStyle(c);
+		c.width = parseInt(cs.width) / 2;
+		c.height = parseInt(cs.height) / 2;
+	}
+	window.onresize = resize;
+
+	let timer = 0;
+	let maxTimer = 8;
+	function tick() {
+		timer--;
+		if (timer <= 0) { 
+			timer = maxTimer;
+			resize();
+			update();
+			draw();
+		}
+		requestAnimationFrame(tick);
+	}
+	tick();
+	
+	
+
+      /*
+      let its = 0; done = false; 
+      let p = new Date();
+      let n = new Date();
+			while (done == false) {
+        its += 1;
+				n = new Date();
+				if (n - p >= 1000) { done = true; }
+      } 
+			*/
+    </script>
+  </body>
 </html>
